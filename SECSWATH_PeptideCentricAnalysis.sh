@@ -25,8 +25,11 @@ docker run -u 0 -dit --name openswath -v $PWD/:/data openswath/openswath:0.1.2
 # say hello!
 docker exec openswath echo hi there, openswath container is happy and alive
 # Great, prepare input data:
-# 01) git clone analysis framework:
-	# https://github.com/heuselm/SECSWATH_PeptideCentricAnalysis.git
+# 01) git clone and set up analysis framework:
+	git clone https://github.com/heuselm/SECSWATH_PeptideCentricAnalysis.git
+	cd SECSWATH_PeptideCentricAnalysis
+	mkdir data_dia
+	mkdir data_dia/unfractionated_secinput
 # 02) Prepare Spectral/Peptide Query parameter Library:
 	# option 1: project-specific library:
 	# --> copy spectrast2tsv.tsv prepared as described in Schubert et al. 2015 to /data_library/
