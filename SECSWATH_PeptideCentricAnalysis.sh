@@ -130,28 +130,16 @@ pyprophet score --threads 6 --in=/data/results/openswath/unfractionated_secinput
 
 # Apply global model to score peak groups in all runs evenly
 #####################################################################
-# Merge
-pyprophet merge --out=/data/results/pyprophet/allruns.osw \
---subsample_ratio=1 /data/results/openswath/*.osw
-
-# Score using the unfractionated model
-pyprophet score --threads 6 --in=/data/results/pyprophet/allruns.osw \
---apply_weights=/data/results/pyprophet/unfractionated_secinput/model.osw --level=ms1ms2
-
-# Export results before pyProphet Qvalue/FDR estimation
-pyprophet export --in=/data/results/pyprophet/allruns.osw \
---out=/data/results/pyprophet/allruns.tsv --format=legacy_merged \
---no-ipf
-
-pyprophet export --in=/data/results/pyprophet/allruns.osw \
---out=/data/results/pyprophet/allruns_matrix.tsv --format=matrix \
---no-ipf
-
-# export scoring pdf reports
-pyprophet export \
---in=/data/results/pyprophet/allruns.osw \
---format=score_plots
-
+for file in /data/results/openswath/*.osw; do \
+bname=$(echo ${file##*/} | cut -f 1 -d '.'); \
+pyprophet score --in=/data/results/openswath/$bname.osw \
+--apply_weights=/data/results/pyprophet/unfractionated_secinput/model.osw \
+--level=ms1ms2 &&
+pyprophet export --in=/data/results/openswath/$bname.osw \
+--out=/data/results/pyprophet/$bname.tsv \
+--format=legacy_merged &&
+pyprophet export --in=/data/results/openswath/$bname.osw \
+--format=score_plots; done
 
 ######################################################################
 # STEP 4: TRIC Alignment: ############################################
@@ -164,7 +152,7 @@ pyprophet export \
 mkdir /data/results/TRIC
 
 feature_alignment.py \
---in /data/results/pyprophet/allruns.tsv \
+--in /data/results/pyprophet/*.tsv \
 --out /data/results/TRIC/feature_alignment.tsv \
 --out_matrix /data/results/TRIC/feature_alignment_matrix.tsv \
 --method LocalMST \
