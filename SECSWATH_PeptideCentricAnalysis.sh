@@ -66,8 +66,7 @@ docker attach openswath
 
 # Set up result folders
 mkdir /data/results
-mkdir /data/results/openswath
-mkdir /data/results/openswath/unfractionated_secinput
+mkdir /data/results/unfractionated_secinput
 
 # Convert líbrary to .pqp
 TargetedFileConverter -in /data/data_library/spectrast2tsv.tsv \
@@ -86,7 +85,7 @@ OpenSwathWorkflow \
 -tr_irt /data/data_library/irtkit.TraML \
 -min_upper_edge_dist 1 \
 -batchSize 1000 \
--out_osw /data/results/openswath/unfractionated_secinput/unfractionated_secinput.osw \
+-out_osw /data/results/unfractionated_secinput/unfractionated_secinput.osw \
 -Scoring:stop_report_after_feature 5 \
 -rt_extraction_window 600 \
 -mz_extraction_window 30 \
@@ -105,7 +104,7 @@ OpenSwathWorkflow \
 -tr_irt /data/data_library/irtkit.TraML \
 -min_upper_edge_dist 1 \
 -batchSize 1000 \
--out_osw /data/results/openswath/$bname.osw \
+-out_osw /data/results/$bname.osw \
 -Scoring:stop_report_after_feature 5 \
 -rt_extraction_window 600 \
 -mz_extraction_window 30 \
@@ -123,36 +122,33 @@ OpenSwathWorkflow \
 # Note: For SEC, one model is trained on the unfractionated input ####
 # that is then applied to each individual run (stabilized scoring) ###
 ######################################################################
-# create pyprophet result folders
-mkdir /data/results/pyprophet
-mkdir /data/results/pyprophet/unfractionated_secinput
 
 # Train Model: pyProphet analysis of unfractionated sample
 #####################################################################
-pyprophet score --threads 6 --in=/data/results/openswath/unfractionated_secinput/unfractionated_secinput.osw \
---out=/data/results/pyprophet/unfractionated_secinput/model.osw --level=ms1ms2
+pyprophet score --threads 6 --in=/data/results/unfractionated_secinput/unfractionated_secinput.osw \
+--out=/data/results/unfractionated_secinput/model.osw --level=ms1ms2
 
 # Apply global model to score peak groups in all runs evenly
 #####################################################################
-for file in /data/results/openswath/*.osw; do \
+for file in /data/results/*.osw; do \
 bname=$(echo ${file##*/} | cut -f 1 -d '.'); \
-pyprophet score --in=/data/results/openswath/$bname.osw \
---apply_weights=/data/results/pyprophet/unfractionated_secinput/model.osw \
+pyprophet score --in=/data/results/$bname.osw \
+--apply_weights=/data/results/unfractionated_secinput/model.osw \
 --level=ms1ms2; done
 
-for file in /data/results/openswath/*.osw; do \
+for file in /data/results/*.osw; do \
 bname=$(echo ${file##*/} | cut -f 1 -d '.'); \
-pyprophet export --in=/data/results/openswath/$bname.osw \
---out=/data/results/pyprophet/$bname.tsv \
+pyprophet export --in=/data/results/$bname.osw \
+--out=/data/results/$bname.tsv \
 --max_rs_peakgroup_qvalue=0.1 \
 --no-transition_quantification \
 --format=legacy_merged; done
 # Note: We advise to manually check if .tsv output files are actually
 # written for all runs. 
 
-for file in /data/results/openswath/*.osw; do \
+for file in /data/results/*.osw; do \
 bname=$(echo ${file##*/} | cut -f 1 -d '.'); \
-pyprophet export --in=/data/results/openswath/$bname.osw \
+pyprophet export --in=/data/results/$bname.osw \
 --format=score_plots; done
 
 ######################################################################
@@ -162,13 +158,11 @@ pyprophet export --in=/data/results/openswath/$bname.osw \
 ######################################################################
 # Roest et al. https://www.nature.com/articles/nmeth.3954 ############
 ######################################################################
-# create TRIC result folder
-mkdir /data/results/TRIC
 
 feature_alignment.py \
---in /data/results/pyprophet/*.tsv \
---out /data/results/TRIC/feature_alignment.tsv \
---out_matrix /data/results/TRIC/feature_alignment_matrix.tsv \
+--in /data/results/*.tsv \
+--out /data/results/feature_alignment.tsv \
+--out_matrix /data/results/feature_alignment_matrix.tsv \
 --method LocalMST \
 --realign_method lowess \
 --max_rt_diff 60 \
@@ -188,4 +182,4 @@ docker rm openswath
 
 # Congrats, you ran the OpenSwathPipeline!
 # Check output in results/ folder
-# Input for CCprofiler: /data/results/TRIC/feature_alignment.tsv
+# Input for CCprofiler: /data/results/feature_alignment.tsv
