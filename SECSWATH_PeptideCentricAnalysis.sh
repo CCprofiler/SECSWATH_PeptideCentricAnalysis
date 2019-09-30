@@ -2,7 +2,7 @@
 
 ######################################################################
 # Docker-based OpenSwath+pyP+TRIC analysis of SEC-SWATH-MS data ######
-# Moritz Heusel 2019-09-06 ###########################################
+# Moritz Heusel & Isabell Bludau #####################################
 ######################################################################
 
 ######################################################################
@@ -14,12 +14,14 @@
 ### sudo usermod -a -G docker $USER
 ## Test docker installation
 docker run hello-world
+## Make sure you allocate enough memory for docker:
+## --> preferences --> advanced --> increase memory
 # get the containerized openswath tool(s)
 docker pull openswath/openswath:0.1.2
 
 # 01) Now prepare data analysis folder(s) and input data:
 	# cd >myworkdir<; ca. 250 gb should be free
-git clone https://github.com/heuselm/SECSWATH_PeptideCentricAnalysis.git
+git clone https://github.com/CCprofiler/SECSWATH_PeptideCentricAnalysis.git
 cd SECSWATH_PeptideCentricAnalysis
 
 # 02) Prepare Spectral/Peptide Query parameter Library:
@@ -30,9 +32,11 @@ cd SECSWATH_PeptideCentricAnalysis
 	# https://db.systemsbiology.net/sbeams/cgi/downloadFile.cgi?name=phl004_canonical_s64_osw.csv;format=tsv;tmp_file=8becf7ae782dd305c0eade59f282bcd1;raw_download=1
 	# Move to data_library and rename
 	# mv phl004_canonical_s64_osw.csv data_library/spectrast2tsv.tsv
+	# You can also download directly via the command line:
+	wget -O data_library\spectrast2tsv.tsv "https://db.systemsbiology.net/sbeams/cgi/downloadFile.cgi?name=phl004_canonical_s64_osw.csv;format=tsv;tmp_file=8becf7ae782dd305c0eade59f282bcd1;raw_download=1"
 # 03) Prepare input data
 	mkdir data_dia
-	mkdir data/data_dia/unfractionated_secinput
+	mkdir data_dia/unfractionated_secinput
 	# Convert .wiff to mzXML with peak picking / centroiding MS levels 1&2
 	# --> copy unfractionated sample SWATH64vw .mzXML to /data_dia/unfractionated_secinput/
 	# --> copy SEC fraction sample SWATH64vw .mzXMLs to /data_dia/
@@ -74,10 +78,10 @@ OpenSwathDecoyGenerator -in /data/data_library/spectrast2tsv.pqp \
 
 ## OpenSwathWorkflow
 # Run OpenSwath on unfractionated sample(s)
-for file in /data/data_dia/unfractionated_secinput/*ML; do \
+for file in /data/data_dia/unfractionated_secinput/*ML.gz; do \
 bname=$(echo ${file##*/} | cut -f 1 -d '.'); \
 OpenSwathWorkflow \
--in /data/data_dia/unfractionated_secinput/$bname.mzXML \
+-in /data/data_dia/unfractionated_secinput/$bname.*ML.gz \
 -tr /data/data_library/spectrast2tsv_td.pqp \
 -tr_irt /data/data_library/irtkit.TraML \
 -min_upper_edge_dist 1 \
@@ -93,10 +97,10 @@ OpenSwathWorkflow \
 -Scoring:Scores:use_mi_score ; done
 
 # Run OpenSwath on fractionated samples
-for file in /data/data_dia/*ML; do \
+for file in /data/data_dia/*ML.gz; do \
 bname=$(echo ${file##*/} | cut -f 1 -d '.'); \
 OpenSwathWorkflow \
--in /data/data_dia/$bname.mzXML \
+-in /data/data_dia/$bname.*ML.gz \
 -tr /data/data_library/spectrast2tsv_td.pqp \
 -tr_irt /data/data_library/irtkit.TraML \
 -min_upper_edge_dist 1 \
@@ -116,14 +120,14 @@ OpenSwathWorkflow \
 # STEP3: PYPROPHET: ##################################################
 # Score and filter OpenSwath results #################################
 ######################################################################
-# Note: This is the "new" pipeline training a global model ###########
+# Note: For SEC, one model is trained on the unfractionated input ####
 # that is then applied to each individual run (stabilized scoring) ###
 ######################################################################
 # create pyprophet result folders
 mkdir /data/results/pyprophet
 mkdir /data/results/pyprophet/unfractionated_secinput
 
-# Train Global Model: pyProphet analysis of unfractionated sample 
+# Train Model: pyProphet analysis of unfractionated sample
 #####################################################################
 pyprophet score --threads 6 --in=/data/results/openswath/unfractionated_secinput/unfractionated_secinput.osw \
 --out=/data/results/pyprophet/unfractionated_secinput/model.osw --level=ms1ms2
@@ -134,10 +138,20 @@ for file in /data/results/openswath/*.osw; do \
 bname=$(echo ${file##*/} | cut -f 1 -d '.'); \
 pyprophet score --in=/data/results/openswath/$bname.osw \
 --apply_weights=/data/results/pyprophet/unfractionated_secinput/model.osw \
---level=ms1ms2 &&
+--level=ms1ms2; done
+
+for file in /data/results/openswath/*.osw; do \
+bname=$(echo ${file##*/} | cut -f 1 -d '.'); \
 pyprophet export --in=/data/results/openswath/$bname.osw \
 --out=/data/results/pyprophet/$bname.tsv \
---format=legacy_merged &&
+--max_rs_peakgroup_qvalue=0.1 \
+--no-transition_quantification \
+--format=legacy_merged; done
+# Note: We advise to manually check if .tsv output files are actually
+# written for all runs. 
+
+for file in /data/results/openswath/*.osw; do \
+bname=$(echo ${file##*/} | cut -f 1 -d '.'); \
 pyprophet export --in=/data/results/openswath/$bname.osw \
 --format=score_plots; done
 
@@ -160,7 +174,10 @@ feature_alignment.py \
 --max_rt_diff 60 \
 --mst:useRTCorrection True \
 --mst:Stdev_multiplier 3.0 \
---target_fdr 0.05
+--target_fdr -1 \
+--fdr_cutoff 0.05 \
+--max_fdr_quality 0.1 \
+--alignment_score 0.05
 
 # exit the docker container
 exit
