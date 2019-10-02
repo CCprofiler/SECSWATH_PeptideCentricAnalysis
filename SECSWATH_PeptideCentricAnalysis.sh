@@ -128,6 +128,13 @@ OpenSwathWorkflow \
 pyprophet score --threads 6 --in=/data/results/unfractionated_secinput/unfractionated_secinput.osw \
 --out=/data/results/unfractionated_secinput/model.osw --level=ms1ms2
 
+# Perform peptide and protein level scoring of the unfractionated 
+# input sample. The results can be used to estimate a conservative 
+# protein-level fraction of false targets (FFT) for CCprofiler 
+# analysis.
+pyprophet peptide --in=/data/results/unfractionated_secinput/model.osw
+pyprophet protein --in=/data/results/unfractionated_secinput/model.osw
+
 # Apply global model to score peak groups in all runs evenly
 #####################################################################
 for file in /data/results/*.osw; do \
