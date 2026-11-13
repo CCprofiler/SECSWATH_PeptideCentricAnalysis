@@ -1,5 +1,12 @@
 # SECSWATH_PeptideCentricAnalysis
-# A cross-platform, docker-based solution to perform peptide-centric analysis of SEC-SWATH-MS datasets.
+**A cross-platform, docker-based solution to perform peptide-centric analysis of SEC-SWATH-MS datasets.**
+
+**By M. Heusel**, for the publication:
+
+> Bludau, I., Heusel, M., Frank, M., Rosenberger, G., Hafen, R., Banaei-Esfahani, A., van Drogen, A., Collins, B.C., Gstaiger, M., Aebersold, R., 2020. Complex-centric proteome profiling by SEC-SWATH-MS for the parallel detection of hundreds of protein complexes. *Nature Protocols* 15, 2341–2386. https://doi.org/10.1038/s41596-020-0332-6
+
+Also cite: Heusel, M., Bludau, I., Rosenberger, G., Hafen, R., Frank, M., Banaei‐Esfahani, A., van Drogen, A., Collins, B.C., Gstaiger, M., Aebersold, R., 2019. Complex‐centric proteome profiling by SEC‐SWATH‐MS. *Mol Syst Biol* 15, MSB188438. https://doi.org/10.15252/msb.20188438
+
 
 # Input
 The inputs are
@@ -24,3 +31,6 @@ Röst, H.L., Rosenberger, G., Navarro, P., Gillet, L., Miladinović, S.M., Schub
 Rosenberger, G., Koh, C.C., Guo, T., Röst, H.L., Kouvonen, P., Collins, B.C., Heusel, M., Liu, Y., Caron, E., Vichalkovski, A., et al. (2014). A repository of assays to quantify 10,000 human proteins by SWATH-MS. Sci. Data 1, 140031.
 
 Röst, H.L., Liu, Y., D’Agostino, G., Zanella, M., Navarro, P., Rosenberger, G., Collins, B.C., Gillet, L., Testa, G., Malmström, L., et al. (2016). TRIC: an automated alignment strategy for reproducible protein quantification in targeted proteomics. Nat. Methods 13, 777–783.
+
+---
+<sub>README optimized with Claude Opus 5.5.</sub>
